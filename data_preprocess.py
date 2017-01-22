@@ -1,3 +1,7 @@
+''''
+    This file is taken from https://github.com/carpedm20/MemN2N-tensorflow
+'''
+
 import os
 from collections import Counter
 
@@ -6,7 +10,9 @@ def read_data(fname, count, word2idx):
         with open(fname) as f:
             lines = f.readlines()
     else:
-        raise("[!] Data %s not found" % fname)
+        print "File not found"
+        raise
+
 
     words = []
     for line in lines:
