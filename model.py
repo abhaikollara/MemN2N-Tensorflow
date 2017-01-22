@@ -16,6 +16,7 @@ class MemN2N(object):
         self.n_words = config['n_words']
         self.lr = config['lr']
         self.std_dev = config['std_dev']
+        self.optim = tf.train.AdamOptimizer(self.lr)
         
         self.inp_X = tf.placeholder('int32',[self.batch_size, self.mem_size])
         self.inp_Y = tf.placeholder('int32', [self.batch_size,])
@@ -62,58 +63,83 @@ class MemN2N(object):
         
         z = tf.matmul(hid[-1], W, transpose_b=True)
         self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(z, self.inp_Y)
-        
+        self.train_op = self.optim.minimize(self.loss)
+        tf.initialize_all_variables().run()
 
-    def train(self, data):
+    def train(self, train_data, valid_data):
         self.init_model()
-        optim = tf.train.AdamOptimizer(self.lr)
-        train_op = optim.minimize(self.loss)
-        cost = 0
 
-        N = int((len(data)/self.batch_size)+1)
+        N = int((len(train_data)/self.batch_size)+1)
         t = np.ndarray([self.batch_size, self.mem_size])
         
         for x in range(0, self.mem_size):
             t[:, x].fill(x)
 
-        tf.initialize_all_variables().run()
+        for epoch in range(self.n_epoch):
+            total_loss = 0
+            for n in range(N):
+                inputs = []
+                targets = []
+                for item in range(self.batch_size):
+                    mark = np.random.randint(self.mem_size+1, len(train_data))
+                    next_word = train_data[mark]
+                    prec_words = train_data[mark-self.mem_size : mark]
+                    inputs.append(prec_words)
+                    targets.append(next_word)
+                inputs = np.asarray(inputs)
+                targets = np.asarray(targets)
+            
+                fd = {
+                    self.inp_X : inputs,
+                    self.inp_Y : targets,
+                    self.time : t
+                }
+                _, batch_loss = self.session.run([self.train_op, self.loss], feed_dict=fd)
+                
+                total_loss += np.sum(batch_loss)
+                cost = total_loss/(n*self.batch_size)
+                perp = np.exp(cost)
+                print "cost",cost, "Perp:",perp,"--",n,"/",N 
+            self.test(valid_data)
+            print
+            print "Perplexity :",np.exp(cost/(N*self.batch_size))
+            print 
+
+    def test(self, data):
+            self.init_model()
+
+            N = int((len(data)/self.batch_size)+1)
+            t = np.ndarray([self.batch_size, self.mem_size])
+            
+            for x in range(0, self.mem_size):
+                t[:, x].fill(x)
+
         
-        for n in range(N):
-            inputs = []
-            targets = []
-            for item in range(self.batch_size):
-                mark = np.random.randint(self.mem_size+1, len(data))
-                next_word = data[mark]
-                prec_words = data[mark-self.mem_size : mark]
-                inputs.append(prec_words)
-                targets.append(next_word)
-            inputs = np.asarray(inputs)
-            targets = np.asarray(targets)
-           
-            fd = {
-                self.inp_X : inputs,
-                self.inp_Y : targets,
-                self.time : t
-            }
-           
+            total_loss = 0
+            for n in range(N):
+                inputs = []
+                targets = []
+                for item in range(self.batch_size):
+                    mark = np.random.randint(self.mem_size+1, len(data))
+                    next_word = data[mark]
+                    prec_words = data[mark-self.mem_size : mark]
+                    inputs.append(prec_words)
+                    targets.append(next_word)
+                inputs = np.asarray(inputs)
+                targets = np.asarray(targets)
+            
+                fd = {
+                    self.inp_X : inputs,
+                    self.inp_Y : targets,
+                    self.time : t
+                }
 
-            _, loss = self.session.run([train_op, self.loss], feed_dict=fd)
-            cost += np.sum(loss)
-            # sys.stdout.write('.')
-            # sys.stdout.flush()
-            print "cost",cost/(n*self.batch_size), "Perp:",np.exp(cost/(n*self.batch_size)),"--",n,"/",N 
+                batch_loss = self.session.run([self.loss], feed_dict=fd)
+                total_loss += np.sum(batch_loss)
+                cost = total_loss/(n*self.batch_size)
+                perp = np.exp(cost)
+                print "cost",cost, "Perp:",perp,"--",n,"/",N 
 
-        print
-        print "Perplexity :",np.exp(cost/(N*self.batch_size))
-        print 
-
-    def test():
-        pass
-
-    # def generate_data(self, data):
-    #     for item in range(self.batch_size):
-    #         mark = np.random.randint(self.mem_size+1, len(data))
-    #         next_word = data[mark]
-    #         prec_words = data[mark-self.mem_size : mark]
-    #         inputs.append(prec_words)
-    #         targets.append(next_word)
+            print
+            print "Perplexity :",perp
+            print 

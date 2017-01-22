@@ -25,11 +25,10 @@ def main():
 
     config['n_words'] = len(word2idx)
     
-    for x in range(config['n_epoch']):
-        print "Epoch :",x
-        with tf.Session() as sess:
-            mod = MemN2N(config, sess)
-            mod.train(train_data)
+    with tf.Session() as sess:
+        mod = MemN2N(config, sess)
+        mod.train(train_data,valid_data)
+        mod.test(test_data)
 
 
 if __name__ == '__main__':
