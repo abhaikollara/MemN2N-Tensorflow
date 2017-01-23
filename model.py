@@ -138,7 +138,9 @@ class MemN2N(object):
                 total_loss += np.sum(batch_loss)
                 cost = total_loss/(n*self.batch_size)
                 perp = np.exp(cost)
-                print "cost",cost, "Perp:",perp,"--",n+1,"/",N 
+                # print "cost",cost, "Perp:",perp,"--",n+1,"/",N
+                sys.stdout.write('.')
+                sys.stdout.flush() 
 
             print
             print "Test Perplexity :",perp
