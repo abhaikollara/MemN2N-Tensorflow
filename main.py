@@ -17,6 +17,8 @@ def main():
         'n_words'       : None,
         'lr'            : 0.001,
         'std_dev'       : 0.05,
+        'cp_dir'        : 'checkpoints'
+
     }
 
     count = list()
@@ -28,6 +30,7 @@ def main():
     config['n_words'] = len(word2idx)
     
     with tf.Session() as sess:
+        print "Training..."
         mod = MemN2N(config, sess)
         mod.train(train_data,valid_data)
         mod.test(test_data)
