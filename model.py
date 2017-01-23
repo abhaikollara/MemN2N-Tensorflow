@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from data_preprocess import read_data
 import sys
+import os
 
 tf.set_random_seed(7)
 
@@ -14,15 +15,20 @@ class MemN2N(object):
         self.n_epoch = config['n_epoch']
         self.n_hop = config['n_hop']
         self.n_words = config['n_words']
+        self.cpoint_dir = config['cp_dir']
         self.lr = config['lr']
         self.std_dev = config['std_dev']
         self.optim = tf.train.AdamOptimizer(self.lr)
-        
+        self.checkpoint = None
         self.inp_X = tf.placeholder('int32',[self.batch_size, self.mem_size])
         self.inp_Y = tf.placeholder('int32', [self.batch_size,])
         self.time = tf.placeholder('int32', [self.batch_size, self.mem_size])    
         self.loss = None  
         self.session = sess
+        
+
+        if not os.path.isdir(self.cpoint_dir):
+            os.mkdir(self.cpoint_dir)
 
     def init_model(self):
         # Input and output embeddings
@@ -65,9 +71,12 @@ class MemN2N(object):
         self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(z, self.inp_Y)
         self.train_op = self.optim.minimize(self.loss)
         tf.initialize_all_variables().run()
+        self.saver = tf.train.Saver()
 
     def train(self, train_data, valid_data):
         self.init_model()
+        if os.path.exists(os.path.join(self.cpoint_dir,'my-model')):
+            self.saver.restore(self.session, os.path.join(self.cpoint_dir,'my-model'))
         #TODO : Merge train and test into a single function
         N = int((len(train_data)/self.batch_size)+1)
         t = np.ndarray([self.batch_size, self.mem_size])
@@ -75,9 +84,10 @@ class MemN2N(object):
         for x in range(0, self.mem_size):
             t[:, x].fill(x)
 
+        print
         for epoch in range(self.n_epoch):
             total_loss = 0
-            for n in range(N):
+            for n in range(1,N+1):
                 inputs = []
                 targets = []
                 for item in range(self.batch_size):
@@ -99,10 +109,16 @@ class MemN2N(object):
                 total_loss += np.sum(batch_loss)
                 cost = total_loss/(n*self.batch_size)
                 perp = np.exp(cost)
-                print "cost",cost, "Perp:",perp,"--",n,"/",N 
+                # print "cost",cost, "Perp:",perp,"--",n,"/",N
+                sys.stdout.write("Perplexity : %f Batch %d of %d\r" % (perp,n,N))
+                sys.stdout.flush() 
+                if n%100 == 0:
+                    self.saver.save(self.session, os.path.join(self.cpoint_dir,'my-model'))
+
             print
-            print "Train Perplexity :",np.exp(cost/(N*self.batch_size))
+            print "Train Perplexity :",perp
             print 
+            self.saver.save(self.session, os.path.join(self.cpoint_dir,'my-model'))
             self.test(valid_data)
 
     def test(self, data):
@@ -116,7 +132,7 @@ class MemN2N(object):
 
         
             total_loss = 0
-            for n in range(N):
+            for n in range(1,N):
                 inputs = []
                 targets = []
                 for item in range(self.batch_size):
@@ -133,15 +149,13 @@ class MemN2N(object):
                     self.inp_Y : targets,
                     self.time : t
                 }
-
+                
                 batch_loss = self.session.run([self.loss], feed_dict=fd)
                 total_loss += np.sum(batch_loss)
                 cost = total_loss/(n*self.batch_size)
                 perp = np.exp(cost)
-                # print "cost",cost, "Perp:",perp,"--",n+1,"/",N
-                sys.stdout.write('.')
+                sys.stdout.write("Perplexity : %f Batch %d of %d\r" % (perp,n,N))
                 sys.stdout.flush() 
-
             print
             print "Test Perplexity :",perp
             print 

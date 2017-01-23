@@ -38,5 +38,5 @@ def read_data(fname, count, word2idx):
             data.append(index)
         data.append(word2idx['<eos>'])
 
-    print("Read %s words from %s" % (len(data), fname))
+    # print("Read %s words from %s" % (len(data), fname))
     return data
