@@ -68,7 +68,7 @@ class MemN2N(object):
 
     def train(self, train_data, valid_data):
         self.init_model()
-
+        #TODO : Merge train and test into a single function
         N = int((len(train_data)/self.batch_size)+1)
         t = np.ndarray([self.batch_size, self.mem_size])
         
@@ -100,13 +100,13 @@ class MemN2N(object):
                 cost = total_loss/(n*self.batch_size)
                 perp = np.exp(cost)
                 print "cost",cost, "Perp:",perp,"--",n,"/",N 
-            self.test(valid_data)
             print
-            print "Perplexity :",np.exp(cost/(N*self.batch_size))
+            print "Train Perplexity :",np.exp(cost/(N*self.batch_size))
             print 
+            self.test(valid_data)
 
     def test(self, data):
-            self.init_model()
+            # self.init_model()
 
             N = int((len(data)/self.batch_size)+1)
             t = np.ndarray([self.batch_size, self.mem_size])
@@ -138,8 +138,8 @@ class MemN2N(object):
                 total_loss += np.sum(batch_loss)
                 cost = total_loss/(n*self.batch_size)
                 perp = np.exp(cost)
-                print "cost",cost, "Perp:",perp,"--",n,"/",N 
+                print "cost",cost, "Perp:",perp,"--",n+1,"/",N 
 
             print
-            print "Perplexity :",perp
+            print "Test Perplexity :",perp
             print 

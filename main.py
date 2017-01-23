@@ -5,6 +5,8 @@ from model import MemN2N
 import tensorflow as tf
 
 def main():
+    # TODO : Transfer configuartion to a seperate file 
+
     config = {
         'batch_size'    : 128,
         'emb_dim'       : 150,
