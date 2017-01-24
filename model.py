@@ -18,7 +18,7 @@ class MemN2N(object):
         self.cpoint_dir = config['cp_dir']
         self.lr = config['lr']
         self.std_dev = config['std_dev']
-        self.optim = tf.train.AdamOptimizer(self.lr)
+        self.optim = tf.train.GradientDescentOptimizer(self.lr)
         self.checkpoint = None
         self.inp_X = tf.placeholder('int32',[self.batch_size, self.mem_size])
         self.inp_Y = tf.placeholder('int32', [self.batch_size,])
@@ -32,30 +32,30 @@ class MemN2N(object):
 
     def init_model(self):
         # Input and output embeddings
-        i_emb   = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
-        o_emb   = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
+        self.i_emb   = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
+        self.o_emb   = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
         # Input and output embedding for time information
-        i_emb_T = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
-        o_emb_T = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
+        self.i_emb_T = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
+        self.o_emb_T = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
         # Query fixed to a vector of 0.1
         initial_q   = tf.constant(0.1, shape=[self.batch_size, self.emb_dim], dtype='float32')
         # For linear mapping of u between hops
-        Aw = tf.Variable(tf.random_normal([self.emb_dim, self.emb_dim], stddev=self.std_dev), dtype='float32')
-        Ab = tf.Variable(tf.random_normal([self.emb_dim], stddev=self.std_dev), dtype='float32')
+        self.Aw = tf.Variable(tf.random_normal([self.emb_dim, self.emb_dim], stddev=self.std_dev), dtype='float32')
+        self.Ab = tf.Variable(tf.random_normal([self.emb_dim], stddev=self.std_dev), dtype='float32')
         #For storing the final layer of each hop
         hid = []
         hid.append(initial_q)
         # Final weight matrix
-        W = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
+        self.W = tf.Variable(tf.random_normal([self.n_words, self.emb_dim], stddev=self.std_dev), dtype='float32')
 
         #Memory vectors
-        mem_C = tf.nn.embedding_lookup(i_emb, self.inp_X)
-        mem_T = tf.nn.embedding_lookup(i_emb_T, self.time)
+        mem_C = tf.nn.embedding_lookup(self.i_emb, self.inp_X)
+        mem_T = tf.nn.embedding_lookup(self.i_emb_T, self.time)
         mem = tf.add(mem_C, mem_T)
 
         #Output vectors
-        out_C = tf.nn.embedding_lookup(o_emb, self.inp_X)
-        out_T = tf.nn.embedding_lookup(o_emb, self.time)
+        out_C = tf.nn.embedding_lookup(self.o_emb, self.inp_X)
+        out_T = tf.nn.embedding_lookup(self.o_emb_T, self.time)
         out = tf.add(out_C, out_T)
 
         for hop in range(self.n_hop):
@@ -64,14 +64,13 @@ class MemN2N(object):
             o = tf.batch_matmul(out, probs, adj_x=True)
             sigma_uo = tf.add(hid3d, o)
             hid2d = tf.reshape(sigma_uo, [-1, self.emb_dim])
-            Cout = tf.add(tf.matmul(hid2d, Aw), Ab) 
+            Cout = tf.add(tf.matmul(hid2d, self.Aw), self.Ab) 
             lin = tf.slice(Cout, [0, 0], [self.batch_size, self.emb_dim/2])
             non_lin = tf.nn.relu(tf.slice(Cout, [0, self.emb_dim/2], [self.batch_size, self.emb_dim/2]))
             hid.append(tf.concat(1, [lin, non_lin]))
         
-        z = tf.matmul(hid[-1], W, transpose_b=True)
+        z = tf.matmul(hid[-1], self.W, transpose_b=True)
         self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(z, self.inp_Y)
-        self.train_op = self.optim.minimize(self.loss)
         tf.initialize_all_variables().run()
         self.saver = tf.train.Saver()
 
@@ -100,12 +99,20 @@ class MemN2N(object):
                     targets.append(next_word)
                 inputs = np.asarray(inputs)
                 targets = np.asarray(targets)
-            
+                
+
                 fd = {
                     self.inp_X : inputs,
                     self.inp_Y : targets,
                     self.time : t
                 }
+
+                params = [self.i_emb, self.o_emb, self.i_emb_T, self.Ab, self.Aw, self.W]
+
+                grads = self.optim.compute_gradients(self.loss, params)
+                clipped_grads = [(tf.clip_by_norm(g[0], 50), g[1]) for g in grads]
+                self.train_op = self.optim.apply_gradients(clipped_grads)
+
                 _, batch_loss = self.session.run([self.train_op, self.loss], feed_dict=fd)
                 
                 total_loss += np.sum(batch_loss)
