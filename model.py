@@ -65,8 +65,9 @@ class MemN2N(object):
             sigma_uo = tf.add(hid3d, o)
             hid2d = tf.reshape(sigma_uo, [-1, self.emb_dim])
             Cout = tf.add(tf.matmul(hid2d, Aw), Ab) 
-            Cout = tf.nn.relu(Cout)
-            hid.append(Cout)
+            lin = tf.slice(Cout, [0, 0], [self.batch_size, self.emb_dim/2])
+            non_lin = tf.nn.relu(tf.slice(Cout, [0, self.emb_dim/2], [self.batch_size, self.emb_dim/2]))
+            hid.append(tf.concat(1, [lin, non_lin]))
         
         z = tf.matmul(hid[-1], W, transpose_b=True)
         self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(z, self.inp_Y)
@@ -85,7 +86,7 @@ class MemN2N(object):
         for x in range(0, self.mem_size):
             t[:, x].fill(x)
 
-        print
+        print '-'*50
         for epoch in range(self.n_epoch):
             total_loss = 0
             for n in range(1,N+1):
