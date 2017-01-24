@@ -55,7 +55,7 @@ class MemN2N(object):
 
         #Output vectors
         out_C = tf.nn.embedding_lookup(o_emb, self.inp_X)
-        out_T = tf.nn.embedding_lookup(o_emb, self.time)
+        out_T = tf.nn.embedding_lookup(o_emb_T, self.time)
         out = tf.add(out_C, out_T)
 
         for hop in range(self.n_hop):
