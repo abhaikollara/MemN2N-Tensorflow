@@ -65,6 +65,7 @@ class MemN2N(object):
             sigma_uo = tf.add(hid3d, o)
             hid2d = tf.reshape(sigma_uo, [-1, self.emb_dim])
             Cout = tf.add(tf.matmul(hid2d, Aw), Ab) 
+            Cout = tf.nn.relu(Cout)
             hid.append(Cout)
         
         z = tf.matmul(hid[-1], W, transpose_b=True)
@@ -109,7 +110,7 @@ class MemN2N(object):
                 total_loss += np.sum(batch_loss)
                 cost = total_loss/(n*self.batch_size)
                 perp = np.exp(cost)
-                # print "cost",cost, "Perp:",perp,"--",n,"/",N
+                
                 sys.stdout.write("Perplexity : %f Batch %d of %d\r" % (perp,n,N))
                 sys.stdout.flush() 
                 if n%100 == 0:
@@ -122,7 +123,6 @@ class MemN2N(object):
             self.test(valid_data)
 
     def test(self, data):
-            # self.init_model()
 
             N = int((len(data)/self.batch_size)+1)
             t = np.ndarray([self.batch_size, self.mem_size])
