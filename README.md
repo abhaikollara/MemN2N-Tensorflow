@@ -4,6 +4,6 @@ An Tensorflow implementation of End-to-End Memory Networks for language modellin
 
 Penn Tree Bank is used as the training dataset.
 
-Note : 
-- The original paper uses a modified version of SGD as the optimizer, for simplicity an Adam optimizer with a learning rate of 0.001 has been used here.
-- ReLU has been applied to the whole layer instead of half the layers as suggested in the paper
+Note
+- Not much hyperparameter tuning has been done
+- Results may vary from original paper
