@@ -72,7 +72,7 @@ class MemN2N(object):
         z = tf.matmul(hid[-1], W, transpose_b=True)
         self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(z, self.inp_Y)
         self.train_op = self.optim.minimize(self.loss)
-        tf.initialize_all_variables().run()
+        tf.global_variables_initializer().run()
         self.saver = tf.train.Saver()
 
     def train(self, train_data, valid_data):
