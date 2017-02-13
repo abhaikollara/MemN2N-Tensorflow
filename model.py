@@ -168,3 +168,7 @@ class MemN2N(object):
             print
             print "Test Perplexity :",perp
             print 
+
+            self.loss_list.append(total_loss)
+            if len(loss_list)>1 and (loss_list[-1] >= loss_list[-2]):
+                self.lr = self.lr/1.5

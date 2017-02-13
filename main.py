@@ -5,14 +5,13 @@ from model import MemN2N
 import tensorflow as tf
 
 def main():
-    # TODO : Transfer configuartion to a seperate file 
 
     config = {
         'batch_size'    : 128,
         'emb_dim'       : 150,
         'mem_size'      : 100,
         'test'          : False,
-        'n_epoch'       : 5,
+        'n_epoch'       : 50,
         'n_hop'         : 6,
         'n_words'       : None,
         'lr'            : 0.001,
