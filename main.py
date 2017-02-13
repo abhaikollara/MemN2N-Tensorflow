@@ -15,7 +15,7 @@ def main():
         'n_epoch'       : 5,
         'n_hop'         : 6,
         'n_words'       : None,
-        'lr'            : 0.01,
+        'lr'            : 0.001,
         'std_dev'       : 0.05,
         'cp_dir'        : 'checkpoints'
 

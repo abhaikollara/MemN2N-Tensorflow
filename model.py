@@ -72,14 +72,14 @@ class MemN2N(object):
         
         z = tf.matmul(hid[-1], self.W, transpose_b=True)
         self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(z, self.inp_Y)
-        tf.initialize_all_variables().run()
+        tf.global_variables_initializer().run()
         self.saver = tf.train.Saver()
 
     def train(self, train_data, valid_data):
         self.init_model()
         if os.path.exists(os.path.join(self.cpoint_dir,'my-model')):
             self.saver.restore(self.session, os.path.join(self.cpoint_dir,'my-model'))
-        #TODO : Merge train and test into a single function
+        
         N = int((len(train_data)/self.batch_size)+1)
         t = np.ndarray([self.batch_size, self.mem_size])
         
@@ -109,7 +109,6 @@ class MemN2N(object):
                 }
 
                 params = [self.i_emb, self.o_emb, self.i_emb_T, self.Ab, self.Aw, self.W]
-
                 grads = self.optim.compute_gradients(self.loss, params)
                 clipped_grads = [(tf.clip_by_norm(g[0], 50), g[1]) for g in grads]
                 self.train_op = self.optim.apply_gradients(clipped_grads)
