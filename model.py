@@ -24,6 +24,7 @@ class MemN2N(object):
         self.inp_Y = tf.placeholder('int32', [self.batch_size,])
         self.time = tf.placeholder('int32', [self.batch_size, self.mem_size])    
         self.loss = None  
+        self.loss_list = []
         self.session = sess
         
 
@@ -167,3 +168,8 @@ class MemN2N(object):
             print
             print "Test Perplexity :",perp
             print 
+
+      #      self.loss_list.append(cost)
+      #      if len(self.loss_list) > 1 and self.loss_list[-1] > self.loss_list[-2]*0.9999:
+      #          va = self.lr/1.5
+      #          self.lr.assign(self.va).eval()
