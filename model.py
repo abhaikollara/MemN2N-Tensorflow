@@ -62,17 +62,17 @@ class MemN2N(object):
 
         for hop in range(self.n_hop):
             hid3d = tf.reshape(hid[-1], [-1, self.emb_dim, 1])
-            probs = tf.nn.softmax(tf.batch_matmul(mem, hid3d))
-            o = tf.batch_matmul(out, probs, adj_x=True)
+            probs = tf.nn.softmax(tf.matmul(mem, hid3d))
+            o = tf.matmul(out, probs, adj_x=True)
             sigma_uo = tf.add(hid3d, o)
             hid2d = tf.reshape(sigma_uo, [-1, self.emb_dim])
             Cout = tf.add(tf.matmul(hid2d, self.Aw), self.Ab) 
             lin = tf.slice(Cout, [0, 0], [self.batch_size, self.emb_dim/2])
             non_lin = tf.nn.relu(tf.slice(Cout, [0, self.emb_dim/2], [self.batch_size, self.emb_dim/2]))
-            hid.append(tf.concat(1, [lin, non_lin]))
+            hid.append(tf.concat(axis=1, values=[lin, non_lin]))
         
         z = tf.matmul(hid[-1], self.W, transpose_b=True)
-        self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(z, self.inp_Y)
+        self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=z, labels=self.inp_Y)
         tf.global_variables_initializer().run()
         self.saver = tf.train.Saver()
 
