@@ -63,7 +63,7 @@ class MemN2N(object):
         for hop in range(self.n_hop):
             hid3d = tf.reshape(hid[-1], [-1, self.emb_dim, 1])
             probs = tf.nn.softmax(tf.matmul(mem, hid3d))
-            o = tf.matmul(out, probs, adj_x=True)
+            o = tf.matmul(out, probs, transpose_a=True)
             sigma_uo = tf.add(hid3d, o)
             hid2d = tf.reshape(sigma_uo, [-1, self.emb_dim])
             Cout = tf.add(tf.matmul(hid2d, self.Aw), self.Ab) 
